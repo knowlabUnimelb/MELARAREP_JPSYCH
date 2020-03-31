@@ -1,0 +1,28 @@
+
+
+Low: C4
+[tone, time] = tone_generator(44100, 1000, 1, 261.63, pi/3, 250, @(N)(hanning(N).^2)); sound(tone, 44100)
+
+Low: E4
+[tone, time] = tone_generator(44100, 1000, 1, 329.63, pi/3, 250, @(N)(hanning(N).^2)); sound(tone, 44100)
+
+High: D5
+[tone, time] = tone_generator(44100, 1000, .5, 587.33, pi/3, 250, @(N)(hanning(N).^2)); sound(tone, 44100)
+(5 steps below and above A4 440Hz)
+
+High: F#5/Gb5 	
+[tone, time] = tone_generator(44100, 1000, .5, 739.99, pi/3, 250, @(N)(hanning(N).^2)); sound(tone, 44100)
+
+https://pages.mtu.edu/~suits/notefreqs.html
+==============
+Melara used these but with an unstated sampling freq so I can't tell what the appropriate level is
+
+Low
+fs = 4096;
+(174.61 Hz)
+[tone, time] = tone_generator(fs, 1000, 1, 174.61, pi/3, 250, @(N)(hanning(N).^2)); sound(tone, fs)
+
+
+High
+(1046.50 Hz) 
+[tone, time] = tone_generator(fs, 1000, 1, 1046.50, pi/3, 250, @(N)(hanning(N).^2)); sound(tone, fs)

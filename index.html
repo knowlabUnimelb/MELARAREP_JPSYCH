@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>2020 Garner AV Experiment</title>
+        <script src="js/serverComm.js" type="text/javascript"></script>
+        <script src="http://code.jquery.com/jquery-3.4.1.min.js"
+                integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+                crossorigin="anonymous"></script>
+        <script src="js/jspsych.js"></script>
+        <script src="js/plugins/jspsych-call-function.js"></script>
+        <script src="js/plugins/jspsych-html-keyboard-response.js"></script>
+        <script src="js/plugins/jspsych-image-keyboard-response.js"></script>
+        <script src="js/plugins/jspsych-audio-keyboard-response.js"></script>
+        <script src="js/jspsych-audiovisual-keyboard-response.js"></script>
+        <!--script src="js/welcome.js"></script-->
+        <link href="css/jspsych.css" rel="stylesheet" type="text/css"></link>
+    </head>
+    <body></body>
+
+    <script>
+
+
+// TODO: Make "ignore..." bold
+// Add better headphone instructions
+// Must use chrome
+// Don't shut your eyes
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/*          SET UP EXPERIMENTAL PARAMETERS */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+    /* Experiment timelines  */
+    var debug = false;
+
+    var experiment_timeline = [];
+    
+    var subject_id = Math.floor(Math.random()*100000);
+
+    var nBlocks = 12; // 12
+    var nPracTrialsPerBlock = 6; // 6 practice
+    var nExpTrialsPerBlock = 24;  // 24 experimental trials (repetitions would be nExpTrialsPerBlock/nStim
+
+    var timeout = 5000;    
+    var iti = 500; // intertrial interval 500
+
+    var prac_conditions = [1,2]; // tone, dot
+    var test_conditions = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; //[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // dim 1, dim 2 garner conditions
+
+    var cb = jsPsych.randomization.shuffle([1, 2]); // Counterbalancing    
+    var rkeyA = "f";
+    var rkeyB = "j";  
+    if (cb[0] == 1){
+        var Amap = "LOW";
+        var Bmap = "HIGH"; 
+    } else {
+        var Amap = "HIGH";
+        var Bmap = "LOW";
+     };        
+
+    // Add data to all trials
+    jsPsych.data.addProperties({
+        subject: subject_id,
+        counter_balance: cb[0]
+    });
+
+
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/*          IMAGE FILE NAMES                               */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+    /* Preload images  */
+    var tones = ['./stims/low.mp3', './stims/high.mp3'];
+    var dots = ['./stims/low.bmp', './stims/high.bmp'];
+
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/*          SET UP INSTRUCTIONS                            */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */ 
+    var welcome = {
+      type: "html-keyboard-response",
+      stimulus: "<p>Welcome to the Audio/Visual Categorization Experiment.</p>" + "<p>Press any key to begin.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
+    var start_instructions = {
+      type: "html-keyboard-response",
+      stimulus: "<p>This experiment consists of 12 short blocks of categorization.</p>" +
+      "<p>On each trial, you will see a dot presented on the screen and/or a tone presented " +
+      "through the computer speakers.</p>" +
+      "<p>You will be asked to categorize the dot/tone into category A or category B. You will " +
+      "be told whether you are correct and incorrect.</p>" +
+      "<p>Please read the instructions for each section carefully as these will tell you how to respond.</p>" +
+      "<p>Press any key to begin.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
+    // Counterbalance response mapping
+    // A = F = LOW, B = J = HIGH
+    var tone_only_instructions = {
+        type: "html-keyboard-response",
+        stimulus: "<p> In this block, you will hear either a low or high pitched tone presented through the headphones.</p>" +
+                  "<p>You should respond by pressing button <b>'" + rkeyA.toUpperCase() + "'</b> if the tone is " + Amap + " .</p>" + 
+                  "<p>You should respond by pressing button <b>'" + rkeyB.toUpperCase() + "'</b> if the tone is " + Bmap + ".</p>" + 
+                  "<p>There will be " + String(nPracTrialsPerBlock) + " practice trials and " + String(nExpTrialsPerBlock) + " experimental trials.</p>"+
+                  "<p>Press a button to start the practice trials.</p>",
+        data: {trial_event: 'instructions'}
+    };   
+
+    var dot_only_instructions = {
+        type: "html-keyboard-response",
+        stimulus: "<p> In this block, you will be shown a yellow dot which can appear either toward the" +
+                  " top or bottom of the screen.</p>" +
+                  "<p>You should respond by pressing button <b>'" + rkeyA.toUpperCase() + "'</b> if the dot is " + Amap + " .</p>" + 
+                  "<p>You should respond by pressing button <b>'" + rkeyB.toUpperCase() + "'</b> if the dot is " + Bmap + ".</p>" + 
+                  "<p>There will be " + String(nPracTrialsPerBlock) + " practice trials and " + String(nExpTrialsPerBlock) + " experimental trials.</p>"+
+                  "<p>Press a button to start the practice trials.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
+    var tone_relevant_instructions = {
+        type: "html-keyboard-response",
+        stimulus: "<p> In this block, you will hear either a low or high pitched tone presented through the" +
+                  " headphones along with a yellow dot.</p>" +
+                  "<p>You should respond by pressing button <b>'" + rkeyA.toUpperCase() + "'</b> if the tone is " + Amap + " .</p>" + 
+                  "<p>You should respond by pressing button <b>'" + rkeyB.toUpperCase() + "'</b> if the tone is " + Bmap + ".</p>" + 
+                  "<p>You should ignore the yellow dot</p>" +
+                  "<p>There will be " + String(nPracTrialsPerBlock) + " practice trials and " + String(nExpTrialsPerBlock) + " experimental trials.</p>"+
+                  "<p>Press a button to start the practice trials.</p>",
+        data: {trial_event: 'instructions'}
+    };   
+
+    var dot_relevant_instructions = {
+        type: "html-keyboard-response",
+        stimulus: "<p> In this block, you will be shown a yellow dot which can appear either toward the " +
+                  " top or bottom of the screen along with a tone.</p>" +
+                  "<p>You should respond by pressing button <b>'" + rkeyA.toUpperCase() + "'</b> if the dot is " + Amap + " .</p>" + 
+                  "<p>You should respond by pressing button <b>'" + rkeyB.toUpperCase() + "'</b> if the dot is " + Bmap + ".</p>" + 
+                  "<p>You should ignore the tone.</p>" +
+                  "<p>There will be " + String(nPracTrialsPerBlock) + " practice trials and " + String(nExpTrialsPerBlock) + " experimental trials.</p>"+
+                  "<p>Press a button to start the practice trials.</p>",
+        data: {trial_event: 'instructions'}
+    };   
+   
+
+    var start_practice_instructions = {
+      type: "html-keyboard-response",
+      stimulus: "<p>Press any key to start the practice trials.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
+    var end_practice_instructions = {
+      type: "html-keyboard-response",
+      stimulus: "<p>Ok, ready to begin the experimental block? Press any key to start.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
+    var end_experiment_instructions = {
+      type: "html-keyboard-response",
+      stimulus: "<p>Thank you for your participation. You may close your browser window.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/*          STIMULI AND EVENTS                */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+    
+   // Stimuli
+   var tone_stimulus = [
+        {tone: tones[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 11, tone_level: 1, dot_level: null, condition: "tone_only", relevant_dimension: "tone"}},
+        {tone: tones[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 12, tone_level: 2, dot_level: null, condition: "tone_only", relevant_dimension: "tone"}}
+   ];
+
+   var dot_stimulus = [
+        {dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 21, tone_level: null, dot_level: 1, condition: "dot_only", relevant_dimension: "dot"}},
+        {dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 22, tone_level: null, dot_level: 2, condition: "dot_only", relevant_dimension: "dot"}}
+   ];
+
+   var control_tone_relevant_dot_low = [
+        {tone: tones[0], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 1, tone_level: 1, dot_level: 1, condition: "control1", relevant_dimension: "tone"}},
+        {tone: tones[1], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 2, tone_level: 2, dot_level: 1, condition: "control1", relevant_dimension: "tone"}}
+   ];
+
+   var control_tone_relevant_dot_high = [
+        {tone: tones[0], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 3, tone_level: 1, dot_level: 2, condition: "control2", relevant_dimension: "tone"}},
+        {tone: tones[1], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 4, tone_level: 2, dot_level: 2, condition: "control2", relevant_dimension: "tone"}}
+   ];
+
+   var control_dot_relevant_tone_low = [
+        {tone: tones[0], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 1, tone_level: 1, dot_level: 1, condition: "control1", relevant_dimension: "dot"}},
+        {tone: tones[0], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 2, tone_level: 1, dot_level: 2, condition: "control1", relevant_dimension: "dot"}}
+   ];
+
+   var control_dot_relevant_tone_high = [
+        {tone: tones[1], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 3, tone_level: 2, dot_level: 1, condition: "control2", relevant_dimension: "dot"}},
+        {tone: tones[1], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 4, tone_level: 2, dot_level: 2, condition: "control2", relevant_dimension: "dot"}}
+   ];
+
+   var correlated_tone_relevant_positive = [
+        {tone: tones[0], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 1, tone_level: 1, dot_level: 1, condition: "correlated1", relevant_dimension: "tone"}},
+        {tone: tones[1], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 4, tone_level: 2, dot_level: 2, condition: "correlated1", relevant_dimension: "tone"}}
+   ];
+
+   var correlated_tone_relevant_negative = [
+        {tone: tones[0], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 3, tone_level: 1, dot_level: 2, condition: "correlated2", relevant_dimension: "tone"}},
+        {tone: tones[1], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 2, tone_level: 2, dot_level: 1, condition: "correlated2", relevant_dimension: "tone"}}
+   ];
+
+   var correlated_dot_relevant_positive = [
+        {tone: tones[0], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 1, tone_level: 1, dot_level: 1, condition: "correlated1", relevant_dimension: "dot"}},
+        {tone: tones[1], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 4, tone_level: 2, dot_level: 2, condition: "correlated1", relevant_dimension: "dot"}}
+   ];
+
+   var correlated_dot_relevant_negative = [
+        {tone: tones[1], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 3, tone_level: 2, dot_level: 1, condition: "correlated2", relevant_dimension: "dot"}},
+        {tone: tones[0], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 2, tone_level: 1, dot_level: 2, condition: "correlated2", relevant_dimension: "dot"}}
+   ];
+
+   var filtering_tone_relevant = [
+        {tone: tones[0], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 1, tone_level: 1, dot_level: 1, condition: "filtering", relevant_dimension: "tone"}},
+        {tone: tones[0], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 3, tone_level: 1, dot_level: 2, condition: "filtering", relevant_dimension: "tone"}},
+        {tone: tones[1], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 2, tone_level: 2, dot_level: 1, condition: "filtering", relevant_dimension: "tone"}},
+        {tone: tones[1], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 4, tone_level: 2, dot_level: 2, condition: "filtering", relevant_dimension: "tone"}}
+   ];            
+
+   var filtering_dot_relevant = [
+        {tone: tones[0], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 1, tone_level: 1, dot_level: 1, condition: "filtering", relevant_dimension: "dot"}},
+        {tone: tones[1], dot: dots[0], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyA} else {return rkeyB}}, stimulus_id: 3, tone_level: 2, dot_level: 1, condition: "filtering", relevant_dimension: "dot"}},
+        {tone: tones[0], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 2, tone_level: 1, dot_level: 2, condition: "filtering", relevant_dimension: "dot"}},
+        {tone: tones[1], dot: dots[1], data:{trial_event: 'trial_stimulus', correct_response: function(){if (cb[0] == 1){return rkeyB} else {return rkeyA}}, stimulus_id: 4, tone_level: 2, dot_level: 2, condition: "filtering", relevant_dimension: "dot"}}
+   ];            
+
+    // Trial Events
+    var fixation = {
+        type: 'html-keyboard-response',
+        stimulus: '<div style="font-size:60px;">+</div>',
+        choices: jsPsych.NO_KEYS,
+        trial_duration: 1000,
+        data: {trial_event: 'fixation'}
+    }
+
+    var audio_trial = {
+        type: 'audio-keyboard-response',
+        stimulus: jsPsych.timelineVariable('tone'),
+        choices: [rkeyA, rkeyB],
+        prompt: "<p>" + Amap + " (press " + rkeyA.toUpperCase()  + ") or " + Bmap + " (press " + rkeyB.toUpperCase() + ")</p>",
+        data: jsPsych.timelineVariable('data'),
+        trial_duration: timeout,
+        on_finish: function(data){
+            data.audio_stimulus = data.stimulus;
+            data.visual_stimulus = null;
+            if (data.rt == null || data.rt > data.trial_duration){
+                data.too_slow = 1;
+                data.response = 99;
+                data.correct = 99;
+            } else {
+                data.too_slow = 0;
+                data.response = jsPsych.pluginAPI.convertKeyCodeToKeyCharacter(data.key_press);
+                data.correct = data.response == data.correct_response;
+            };
+        }
+    }
+
+    var visual_trial = {
+        type: 'image-keyboard-response',
+        stimulus: jsPsych.timelineVariable('dot'),
+        choices: [rkeyA, rkeyB],
+        prompt: "<p>" + Amap + " (press " + rkeyA.toUpperCase()  + ") or " + Bmap + " (press " + rkeyB.toUpperCase() + ")</p>",
+        data: jsPsych.timelineVariable('data'),
+        trial_duration: timeout,
+        on_finish: function(data){
+            data.visual_stimulus = data.stimulus;
+            data.audio_stimulus = null;
+            if (data.rt == null || data.rt > data.trial_duration){
+                data.too_slow = 1;
+                data.response = 99;
+                data.correct = 99;
+            } else {
+                data.too_slow = 0;
+                data.response = jsPsych.pluginAPI.convertKeyCodeToKeyCharacter(data.key_press);
+                data.correct = data.response == data.correct_response;
+            };
+        }
+    }
+
+    var bimodal_trial = {
+        type: 'audiovisual-keyboard-response',
+        audio_stimulus: jsPsych.timelineVariable('tone'),
+        visual_stimulus: jsPsych.timelineVariable('dot'),
+        choices: [rkeyA, rkeyB],
+        prompt: "<p>" + Amap + " (press " + rkeyA.toUpperCase()  + ") or " + Bmap + " (press " + rkeyB.toUpperCase() + ")</p>",
+        data: jsPsych.timelineVariable('data'),
+        trial_duration: timeout,
+        on_finish: function(data){
+            if (data.rt == null || data.rt > data.trial_duration){
+                data.too_slow = 1;
+                data.response = 99;
+                data.correct = 99;
+            } else {
+                data.too_slow = 0;
+                data.response = jsPsych.pluginAPI.convertKeyCodeToKeyCharacter(data.key_press);
+                data.correct = data.response == data.correct_response;
+            };
+        }
+    }
+
+   var feedback = {
+        type: 'html-keyboard-response',
+        stimulus: function(){
+            var last_trial_too_slow = jsPsych.data.get().filter({trial_event: "trial_stimulus"}).last(1).values()[0].too_slow;
+            var last_trial_correct = jsPsych.data.get().filter({trial_event: "trial_stimulus"}).last(1).values()[0].correct;
+                if(last_trial_too_slow && last_trial_correct){
+                    return "<p>Too Slow! Respond Faster!</p>";
+                } else if (last_trial_too_slow && !last_trial_correct){
+                    return "<p>Too Slow! Respond Faster!</p>";
+                } else if (!last_trial_too_slow && last_trial_correct){
+                    return "<p>Correct!</p>";
+                } else {
+                    return "<p>Wrong!</p>";
+                };
+            }, 
+        choices: jsPsych.NO_KEYS,
+        data: {trial_event: 'feedback'},
+        trial_duration: 1000
+    }    
+
+    // Practice Timeline events
+    var prac_show_tone = {
+        timeline: [fixation, audio_trial, feedback],
+        timeline_variables: tone_stimulus,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2}
+    }
+
+    var prac_show_dot = {
+        timeline: [fixation, visual_trial, feedback],
+        timeline_variables: dot_stimulus,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2}
+    }
+
+    var prac_bimodal_control_trdl = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: control_tone_relevant_dot_low,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2;}
+    }
+
+    var prac_bimodal_control_trdh = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: control_tone_relevant_dot_high,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2;}
+    }
+    var prac_bimodal_control_drtl = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: control_dot_relevant_tone_low,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2;}
+    }
+
+    var prac_bimodal_control_drth = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: control_dot_relevant_tone_high,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2;}
+    }
+
+
+    var prac_bimodal_correlated_trp = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: correlated_tone_relevant_positive,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2;}
+    }
+
+    var prac_bimodal_correlated_trn = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: correlated_tone_relevant_negative,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2;}
+    }
+
+    var prac_bimodal_correlated_drp = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: correlated_dot_relevant_positive,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2;}
+    }
+
+    var prac_bimodal_correlated_drn = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: correlated_dot_relevant_negative,
+        randomize_order: true,
+        repetitions: function(){return nPracTrialsPerBlock/2;}
+    }
+
+
+    var prac_bimodal_filtering_tone = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: filtering_tone_relevant,
+        randomize_order: true,
+        repetitions: function(){return Math.ceil(nPracTrialsPerBlock/4);}
+    }
+
+    var prac_bimodal_filtering_dot = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: filtering_dot_relevant,
+        randomize_order: true,
+        repetitions: function(){return Math.ceil(nPracTrialsPerBlock/4);}
+    }
+
+    // Experimental Timeline events
+    var show_tone = {
+        timeline: [fixation, audio_trial, feedback],
+        timeline_variables: tone_stimulus,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2}
+    }
+
+    var show_dot = {
+        timeline: [fixation, visual_trial, feedback],
+        timeline_variables: dot_stimulus,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2}
+    }
+
+    var bimodal_control_trdl = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: control_tone_relevant_dot_low,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2;}
+    }
+
+    var bimodal_control_trdh = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: control_tone_relevant_dot_high,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2;}
+    }
+    var bimodal_control_drtl = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: control_dot_relevant_tone_low,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2;}
+    }
+
+    var bimodal_control_drth = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: control_dot_relevant_tone_high,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2;}
+    }
+
+
+    var bimodal_correlated_trp = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: correlated_tone_relevant_positive,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2;}
+    }
+
+    var bimodal_correlated_trn = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: correlated_tone_relevant_negative,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2;}
+    }
+
+    var bimodal_correlated_drp = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: correlated_dot_relevant_positive,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2;}
+    }
+
+    var bimodal_correlated_drn = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: correlated_dot_relevant_negative,
+        randomize_order: true,
+        repetitions: function(){return nExpTrialsPerBlock/2;}
+    }
+
+
+    var bimodal_filtering_tone = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: filtering_tone_relevant,
+        randomize_order: true,
+        repetitions: function(){return Math.ceil(nExpTrialsPerBlock/4);}
+    }
+
+    var bimodal_filtering_dot = {
+        timeline: [fixation, bimodal_trial, feedback],
+        timeline_variables: filtering_dot_relevant,
+        randomize_order: true,
+        repetitions: function(){return Math.ceil(nExpTrialsPerBlock/4);}
+    }
+
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/*          SET UP EXPERIMENTAL TIMELINE                   */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+// tone_only_, dot_only_, tone_relevant_, dot_relevant 
+// conditions = [tone, dot, 
+//               dim1_control_1, dim1_control_2, dim1_correlated_1, dim1_correlated_2, dim1_filtering,  
+//               dim2_control_1, dim2_control_2, dim2_correlated_1, dim2_correlated_2, dim2_filtering]  
+//  dim1 = tone relevant, dim2 = dot relevant
+//  _1 = irrelevant stimulus at level 1, _2 = irrelevant stimulus at level 2
+
+    /* Set up experiment timeline */
+    experiment_timeline.push(welcome);
+    experiment_timeline.push(start_instructions);
+
+    // Randomize conditions
+    var blockTypes = jsPsych.randomization.shuffle(prac_conditions); // Practice conditions
+    blockTypes = blockTypes.concat(jsPsych.randomization.shuffle(test_conditions)); // Experimental conditions  
+    
+
+    // Counters
+    var i;
+
+    // Sample conditions 
+    for (i = 0; i < nBlocks; i++) {
+        // Select condition
+        if (blockTypes[i] == 1) { // tone_only
+            experiment_timeline.push(tone_only_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_show_tone);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(show_tone);
+        } else if (blockTypes[i] == 2) { // dot_only
+            experiment_timeline.push(dot_only_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_show_dot);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(show_dot);
+        } else if (blockTypes[i] == 3) {  // trdl
+            experiment_timeline.push(tone_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_control_trdl);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_control_trdl);
+        } else if (blockTypes[i] == 4) {  // trdh
+            experiment_timeline.push(tone_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_control_trdh);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_control_trdh);
+        } else if (blockTypes[i] == 5) {  // tp
+            experiment_timeline.push(tone_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_correlated_trp);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_correlated_trp);
+        } else if (blockTypes[i] == 6) {  // tn
+            experiment_timeline.push(tone_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_correlated_trn);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_correlated_trn);
+        } else if (blockTypes[i] == 7) {  // tf
+            experiment_timeline.push(tone_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_filtering_tone);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_filtering_tone);
+        } else if (blockTypes[i] == 8) {  // drtl
+            experiment_timeline.push(dot_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_control_drtl);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_control_drtl);
+        } else if (blockTypes[i] == 9) {  // drth
+            experiment_timeline.push(dot_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_control_drth);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_control_drth);
+        } else if (blockTypes[i] == 10) {  // dp
+            experiment_timeline.push(dot_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_correlated_drp);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_correlated_drp);
+        } else if (blockTypes[i] == 11) {  // dn
+            experiment_timeline.push(dot_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_correlated_drn);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_correlated_drn);
+        } else if (blockTypes[i] == 12) {  // df
+            experiment_timeline.push(dot_relevant_instructions);
+
+            experiment_timeline.push(start_practice_instructions);
+            experiment_timeline.push(prac_bimodal_filtering_dot);
+            experiment_timeline.push(end_practice_instructions);
+
+            experiment_timeline.push(bimodal_filtering_dot);
+       }      
+    }
+
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/*          SAVE DATA AND END EXPERIMENT                   */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+
+    var save_data = {
+        type: 'call-function',
+        func: function(){
+            //serverComm.save_data(jsPsych.data.get().values());
+            serverComm.save_data(jsPsych.data.get().filter({trial_event: "trial_stimulus"}).values());
+      }
+    }
+    experiment_timeline.push(save_data);
+    experiment_timeline.push(end_experiment_instructions);
+
+    /* Initialise experiment */
+    jsPsych.init({
+        timeline: experiment_timeline,
+        preload_images: dots,
+        preload_audio: tones,
+        default_iti: iti, 
+        use_webaudio: true
+        }
+    );
+    </script>
+</html>
+
