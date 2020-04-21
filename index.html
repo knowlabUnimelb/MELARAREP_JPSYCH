@@ -8,9 +8,12 @@
                 crossorigin="anonymous"></script>
         <script src="js/jspsych.js"></script>
         <script src="js/plugins/jspsych-call-function.js"></script>
+        <script src="js/plugins/jspsych-external-html.js"></script>
+        <script src="js/plugins/jspsych-html-button-response.js"></script>
         <script src="js/plugins/jspsych-html-keyboard-response.js"></script>
         <script src="js/plugins/jspsych-image-keyboard-response.js"></script>
         <script src="js/plugins/jspsych-audio-keyboard-response.js"></script>
+        <script src="js/plugins/jspsych-audio-button-response.js"></script>
         <script src="js/jspsych-audiovisual-keyboard-response.js"></script>
         <!--script src="js/welcome.js"></script-->
         <link href="css/jspsych.css" rel="stylesheet" type="text/css"></link>
@@ -19,16 +22,25 @@
 
     <script>
 
+// NOTE: Will only run from the server, will not run locally
+//
+// TODO: 
+// Add data descriptions to data file
+// Write out data every block?
+// Write out only relevant fields
 
-// TODO: Make "ignore..." bold
-// Add better headphone instructions
-// Must use chrome
-// Don't shut your eyes
 /* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
 /*          SET UP EXPERIMENTAL PARAMETERS */
 /* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
     /* Experiment timelines  */
     var debug = false;
+    
+    var url = location["href"]; // Return full url with id nubmer
+    var idString = url.split("?")[1]; 
+    var id = idString.split("=")[1];
+
+    var plsfile = './stims/pls.html';
+    var consentfile = './stims/consent.html';
 
     var experiment_timeline = [];
     
@@ -58,7 +70,8 @@
     // Add data to all trials
     jsPsych.data.addProperties({
         subject: subject_id,
-        counter_balance: cb[0]
+        counter_balance: cb[0],
+        uniqueid: id
     });
 
 
@@ -74,9 +87,40 @@
 /* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */ 
     var welcome = {
       type: "html-keyboard-response",
-      stimulus: "<p>Welcome to the Audio/Visual Categorization Experiment.</p>" + "<p>Press any key to begin.</p>",
+      stimulus: "<p>Welcome to the Audio/Visual Categorization Experiment.</p>" +
+                "<p>Please put aside all distractions while completing the experiment.</p>" + 
+                "<p><b>VERY IMPORTANT! THIS EXPERIMENT NEEDS TO BE RUN IN A CHROME BROWSER</b></p>" + 
+                "<p>Once you begin, do not refresh this page</p>" + 
+                "<p>Press any key to begin.</p>",
         data: {trial_event: 'instructions'}
     };
+
+    var pls = {
+        type: "external-html",
+        url: plsfile,
+        cont_btn: "next",
+        data: {trial_event: 'instructions'}  
+    };
+
+    var check_consent = function(elem) {
+      if (document.getElementById('consent_checkbox').checked) {
+        return true;
+      }
+      else {
+        alert("If you wish to participate, you must check the box next to the statement 'I agree to participate in this study.'");
+        return false;
+      }
+      return false;
+    };
+
+    var consent = {
+        type: "external-html",
+        url: consentfile,
+        cont_btn: "start",
+        check_fn: check_consent,
+        data: {trial_event: 'instructions'}  
+    };
+
 
     var start_instructions = {
       type: "html-keyboard-response",
@@ -90,6 +134,44 @@
         data: {trial_event: 'instructions'}
     };
 
+    var check_audio_instructions = {
+        type: "html-keyboard-response",
+        stimulus: "<p>This experiment requires both visual and auditory judgements</p>" +
+            "<p>It will work best if you have a pair of headphones. But computer speakers may also work</p>" +
+            "<p>We will first need to check that you can hear the audio</p>" +
+            "<p>Press any key to continue.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
+    var headphone_check = {
+        type: "html-button-response",
+        stimulus: "<p>Are you using headphones or speakers?",
+        choices: ['Headphones', 'Speakers'],
+        button_html:  '<button class="jspsych-btn"><div style="font-size:30px;">%choice%</div></button>',                
+        prompt: "<p> Select an option with the mouse </p>",
+        data: {trial_event:  'trial_stimulus'}
+    };
+
+    var check_audio = {
+        type: "audio-button-response",
+        stimulus: tones[0],
+        choices: ['Yes', 'No'],
+        button_html:  '<button class="jspsych-btn"><div style="font-size:30px;">%choice%</div></button>',            
+        prompt: "<p>Can you hear the tone that was played?</p>",
+        data: {trial_event: 'audio_check'}
+    }
+
+    var check_audio_loop = {
+        timeline: [check_audio],
+        loop_function: function(data){
+            if("0" != data.last(1).values()[0].button_pressed){
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
     // Counterbalance response mapping
     // A = F = LOW, B = J = HIGH
     var tone_only_instructions = {
@@ -98,6 +180,7 @@
                   "<p>You should respond by pressing button <b>'" + rkeyA.toUpperCase() + "'</b> if the tone is " + Amap + " .</p>" + 
                   "<p>You should respond by pressing button <b>'" + rkeyB.toUpperCase() + "'</b> if the tone is " + Bmap + ".</p>" + 
                   "<p>There will be " + String(nPracTrialsPerBlock) + " practice trials and " + String(nExpTrialsPerBlock) + " experimental trials.</p>"+
+                  "<p>Please maintain fixation on the fixation cross</p>" + 
                   "<p>Press a button to start the practice trials.</p>",
         data: {trial_event: 'instructions'}
     };   
@@ -109,6 +192,7 @@
                   "<p>You should respond by pressing button <b>'" + rkeyA.toUpperCase() + "'</b> if the dot is " + Amap + " .</p>" + 
                   "<p>You should respond by pressing button <b>'" + rkeyB.toUpperCase() + "'</b> if the dot is " + Bmap + ".</p>" + 
                   "<p>There will be " + String(nPracTrialsPerBlock) + " practice trials and " + String(nExpTrialsPerBlock) + " experimental trials.</p>"+
+                  "<p>Please maintain fixation on the fixation cross</p>" + 
                   "<p>Press a button to start the practice trials.</p>",
         data: {trial_event: 'instructions'}
     };
@@ -119,8 +203,9 @@
                   " headphones along with a yellow dot.</p>" +
                   "<p>You should respond by pressing button <b>'" + rkeyA.toUpperCase() + "'</b> if the tone is " + Amap + " .</p>" + 
                   "<p>You should respond by pressing button <b>'" + rkeyB.toUpperCase() + "'</b> if the tone is " + Bmap + ".</p>" + 
-                  "<p>You should ignore the yellow dot</p>" +
+                  "<p><b>You should focus on the tone</b> and ignore the yellow dot</p>" +
                   "<p>There will be " + String(nPracTrialsPerBlock) + " practice trials and " + String(nExpTrialsPerBlock) + " experimental trials.</p>"+
+                  "<p>Please maintain fixation on the fixation cross</p>" + 
                   "<p>Press a button to start the practice trials.</p>",
         data: {trial_event: 'instructions'}
     };   
@@ -131,8 +216,9 @@
                   " top or bottom of the screen along with a tone.</p>" +
                   "<p>You should respond by pressing button <b>'" + rkeyA.toUpperCase() + "'</b> if the dot is " + Amap + " .</p>" + 
                   "<p>You should respond by pressing button <b>'" + rkeyB.toUpperCase() + "'</b> if the dot is " + Bmap + ".</p>" + 
-                  "<p>You should ignore the tone.</p>" +
+                  "<p><b>You should focus on the yellow dot</b> and ignore the tone.</p>" +
                   "<p>There will be " + String(nPracTrialsPerBlock) + " practice trials and " + String(nExpTrialsPerBlock) + " experimental trials.</p>"+
+                  "<p>Please maintain fixation on the fixation cross</p>" + 
                   "<p>Press a button to start the practice trials.</p>",
         data: {trial_event: 'instructions'}
     };   
@@ -150,11 +236,65 @@
         data: {trial_event: 'instructions'}
     };
 
+    var end_practice_dot_instructions = {
+      type: "html-keyboard-response",
+      stimulus: "<p>Ok, ready to begin the experimental block? </p>" +
+                "<p>Remember to maintain fixation on the fixation cross</p>" + 
+                "<p>Remember: <b>focus on the yellow dot</b></p>" +  
+                "<p>Press any key to start.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
+    var end_practice_tone_instructions = {
+      type: "html-keyboard-response",
+      stimulus: "<p>Ok, ready to begin the experimental block? </p>" +
+                "<p>Remember to maintain fixation on the fixation cross</p>" + 
+                "<p>Remember: <b>focus on the tone</b></p>" +  
+                "<p>Press any key to start.</p>",
+        data: {trial_event: 'instructions'}
+    };
+
     var end_experiment_instructions = {
       type: "html-keyboard-response",
       stimulus: "<p>Thank you for your participation. You may close your browser window.</p>",
         data: {trial_event: 'instructions'}
     };
+
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+/*          CHECKS                */
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+
+    var check_dimension = {
+        type: "html-button-response",
+        stimulus: "Which stimulus dimension should you focus on?",
+        choices: ['Tone', 'Yellow Dot'],
+        button_html:  '<button class="jspsych-btn"><div style="font-size:30px;">%choice%</div></button>',            
+        prompt: "<p>Select one of the choices</p>",
+        data: {trial_event: 'instructions_check'}
+    }
+
+    var check_dot_loop = {
+        timeline: [check_dimension],
+        loop_function: function(data){
+            if("0" == data.last(1).values()[0].button_pressed){
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    var check_tone_loop = {
+        timeline: [check_dimension],
+        loop_function: function(data){
+            if("1" == data.last(1).values()[0].button_pressed){
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
 
 /* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
 /*          STIMULI AND EVENTS                */
@@ -283,7 +423,7 @@
         audio_stimulus: jsPsych.timelineVariable('tone'),
         visual_stimulus: jsPsych.timelineVariable('dot'),
         choices: [rkeyA, rkeyB],
-        prompt: "<p>" + Amap + " (press " + rkeyA.toUpperCase()  + ") or " + Bmap + " (press " + rkeyB.toUpperCase() + ")</p>",
+        prompt: "</p>" + "<p>" + Amap + " (press " + rkeyA.toUpperCase()  + ") or " + Bmap + " (press " + rkeyB.toUpperCase() + ")</p>",
         data: jsPsych.timelineVariable('data'),
         trial_duration: timeout,
         on_finish: function(data){
@@ -324,41 +464,41 @@
         timeline: [fixation, audio_trial, feedback],
         timeline_variables: tone_stimulus,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2}
+        repetitions: nPracTrialsPerBlock/2
     }
 
     var prac_show_dot = {
         timeline: [fixation, visual_trial, feedback],
         timeline_variables: dot_stimulus,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2}
+        repetitions: nPracTrialsPerBlock/2
     }
 
     var prac_bimodal_control_trdl = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: control_tone_relevant_dot_low,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2;}
+        repetitions: nPracTrialsPerBlock/2
     }
 
     var prac_bimodal_control_trdh = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: control_tone_relevant_dot_high,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2;}
+        repetitions: nPracTrialsPerBlock/2
     }
     var prac_bimodal_control_drtl = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: control_dot_relevant_tone_low,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2;}
+        repetitions: nPracTrialsPerBlock/2
     }
 
     var prac_bimodal_control_drth = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: control_dot_relevant_tone_high,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2;}
+        repetitions: nPracTrialsPerBlock/2
     }
 
 
@@ -366,28 +506,28 @@
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: correlated_tone_relevant_positive,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2;}
+        repetitions: nPracTrialsPerBlock/2
     }
 
     var prac_bimodal_correlated_trn = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: correlated_tone_relevant_negative,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2;}
+        repetitions: nPracTrialsPerBlock/2
     }
 
     var prac_bimodal_correlated_drp = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: correlated_dot_relevant_positive,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2;}
+        repetitions: nPracTrialsPerBlock/2
     }
 
     var prac_bimodal_correlated_drn = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: correlated_dot_relevant_negative,
         randomize_order: true,
-        repetitions: function(){return nPracTrialsPerBlock/2;}
+        repetitions: nPracTrialsPerBlock/2
     }
 
 
@@ -395,14 +535,14 @@
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: filtering_tone_relevant,
         randomize_order: true,
-        repetitions: function(){return Math.ceil(nPracTrialsPerBlock/4);}
+        repetitions: nPracTrialsPerBlock/4
     }
 
     var prac_bimodal_filtering_dot = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: filtering_dot_relevant,
         randomize_order: true,
-        repetitions: function(){return Math.ceil(nPracTrialsPerBlock/4);}
+        repetitions: nPracTrialsPerBlock/4
     }
 
     // Experimental Timeline events
@@ -410,41 +550,41 @@
         timeline: [fixation, audio_trial, feedback],
         timeline_variables: tone_stimulus,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2}
+        repetitions: nExpTrialsPerBlock/2
     }
 
     var show_dot = {
         timeline: [fixation, visual_trial, feedback],
         timeline_variables: dot_stimulus,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2}
+        repetitions: nExpTrialsPerBlock/2
     }
 
     var bimodal_control_trdl = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: control_tone_relevant_dot_low,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2;}
+        repetitions: nExpTrialsPerBlock/2
     }
 
     var bimodal_control_trdh = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: control_tone_relevant_dot_high,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2;}
+        repetitions: nExpTrialsPerBlock/2
     }
     var bimodal_control_drtl = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: control_dot_relevant_tone_low,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2;}
+        repetitions: nExpTrialsPerBlock/2
     }
 
     var bimodal_control_drth = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: control_dot_relevant_tone_high,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2;}
+        repetitions: nExpTrialsPerBlock/2
     }
 
 
@@ -452,28 +592,28 @@
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: correlated_tone_relevant_positive,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2;}
+        repetitions: nExpTrialsPerBlock/2
     }
 
     var bimodal_correlated_trn = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: correlated_tone_relevant_negative,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2;}
+        repetitions: nExpTrialsPerBlock/2
     }
 
     var bimodal_correlated_drp = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: correlated_dot_relevant_positive,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2;}
+        repetitions: nExpTrialsPerBlock/2
     }
 
     var bimodal_correlated_drn = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: correlated_dot_relevant_negative,
         randomize_order: true,
-        repetitions: function(){return nExpTrialsPerBlock/2;}
+        repetitions: nExpTrialsPerBlock/2
     }
 
 
@@ -481,14 +621,14 @@
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: filtering_tone_relevant,
         randomize_order: true,
-        repetitions: function(){return Math.ceil(nExpTrialsPerBlock/4);}
+        repetitions: nExpTrialsPerBlock/4
     }
 
     var bimodal_filtering_dot = {
         timeline: [fixation, bimodal_trial, feedback],
         timeline_variables: filtering_dot_relevant,
         randomize_order: true,
-        repetitions: function(){return Math.ceil(nExpTrialsPerBlock/4);}
+        repetitions: nExpTrialsPerBlock/4
     }
 
 /* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
@@ -503,7 +643,13 @@
 
     /* Set up experiment timeline */
     experiment_timeline.push(welcome);
+    experiment_timeline.push(pls);
+    experiment_timeline.push(consent);
     experiment_timeline.push(start_instructions);
+    experiment_timeline.push(check_audio_instructions);
+    experiment_timeline.push(headphone_check);
+    experiment_timeline.push(check_audio_loop);
+
 
     // Randomize conditions
     var blockTypes = jsPsych.randomization.shuffle(prac_conditions); // Practice conditions
@@ -524,6 +670,7 @@
             experiment_timeline.push(end_practice_instructions);
 
             experiment_timeline.push(show_tone);
+
         } else if (blockTypes[i] == 2) { // dot_only
             experiment_timeline.push(dot_only_instructions);
 
@@ -532,84 +679,85 @@
             experiment_timeline.push(end_practice_instructions);
 
             experiment_timeline.push(show_dot);
+
         } else if (blockTypes[i] == 3) {  // trdl
             experiment_timeline.push(tone_relevant_instructions);
-
+            experiment_timeline.push(check_tone_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_control_trdl);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_tone_instructions);
 
             experiment_timeline.push(bimodal_control_trdl);
         } else if (blockTypes[i] == 4) {  // trdh
             experiment_timeline.push(tone_relevant_instructions);
-
+            experiment_timeline.push(check_tone_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_control_trdh);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_tone_instructions);
 
             experiment_timeline.push(bimodal_control_trdh);
         } else if (blockTypes[i] == 5) {  // tp
             experiment_timeline.push(tone_relevant_instructions);
-
+            experiment_timeline.push(check_tone_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_correlated_trp);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_tone_instructions);
 
             experiment_timeline.push(bimodal_correlated_trp);
         } else if (blockTypes[i] == 6) {  // tn
             experiment_timeline.push(tone_relevant_instructions);
-
+            experiment_timeline.push(check_tone_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_correlated_trn);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_tone_instructions);
 
             experiment_timeline.push(bimodal_correlated_trn);
         } else if (blockTypes[i] == 7) {  // tf
             experiment_timeline.push(tone_relevant_instructions);
-
+            experiment_timeline.push(check_tone_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_filtering_tone);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_tone_instructions);
 
             experiment_timeline.push(bimodal_filtering_tone);
         } else if (blockTypes[i] == 8) {  // drtl
             experiment_timeline.push(dot_relevant_instructions);
-
+            experiment_timeline.push(check_dot_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_control_drtl);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_dot_instructions);
 
             experiment_timeline.push(bimodal_control_drtl);
         } else if (blockTypes[i] == 9) {  // drth
             experiment_timeline.push(dot_relevant_instructions);
-
+            experiment_timeline.push(check_dot_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_control_drth);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_dot_instructions);
 
             experiment_timeline.push(bimodal_control_drth);
         } else if (blockTypes[i] == 10) {  // dp
             experiment_timeline.push(dot_relevant_instructions);
-
+            experiment_timeline.push(check_dot_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_correlated_drp);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_dot_instructions);
 
             experiment_timeline.push(bimodal_correlated_drp);
         } else if (blockTypes[i] == 11) {  // dn
             experiment_timeline.push(dot_relevant_instructions);
-
+            experiment_timeline.push(check_dot_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_correlated_drn);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_dot_instructions);
 
             experiment_timeline.push(bimodal_correlated_drn);
         } else if (blockTypes[i] == 12) {  // df
             experiment_timeline.push(dot_relevant_instructions);
-
+            experiment_timeline.push(check_dot_loop);
             experiment_timeline.push(start_practice_instructions);
             experiment_timeline.push(prac_bimodal_filtering_dot);
-            experiment_timeline.push(end_practice_instructions);
+            experiment_timeline.push(end_practice_dot_instructions);
 
             experiment_timeline.push(bimodal_filtering_dot);
        }      
